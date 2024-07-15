@@ -1,6 +1,6 @@
 pars = (;A = 1.0, # total factor productivity
     α = 0.33, # capital share
-    r = 0.04, # interest rate
+    r = 0.00, # interest rate
     w = 1.0, # wage
     β = 0.9, # discount factor
     γ = 2.0, # risk aversion
