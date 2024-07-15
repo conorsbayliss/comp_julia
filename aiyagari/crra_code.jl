@@ -19,7 +19,7 @@ pars = (;A = 1.0, # total factor productivity
     print_skip = 100, # how often to print
     print_skip_prices = 10, # how often to print
     lb = 0.0, # lower bound of capital grid
-    ub = 2000.0) # upper bound of capital grid
+    ub = 10000.0) # upper bound of capital grid
 
 function utility(c, pars)
     (; γ) = pars
