@@ -78,12 +78,12 @@ function howard(v, policy, Π, Agrid, Zgrid, tuple)
     return v
 end   
 
-function vfi(v_init, pars)
-    (; maxiter, toler, nz, na, print_skip) = pars
-    Π, Zvals = ar1(pars)
-    Avals = exp_grid(pars)
-    v_new = similar(v_init)
-    policy = similar(v_init)
+function vfi(v_init, policy, Π, Zvals, Avals, v_new, pars)
+    (; maxiter, toler, print_skip) = pars
+    #Π, Zvals = ar1(pars)
+    #Avals = exp_grid(pars)
+    #v_new = similar(v_init)
+    #policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
@@ -105,12 +105,12 @@ function vfi(v_init, pars)
     return v_new, policy
 end
 
-function hpi(v, pol , pars)
-    (; maxiter, toler, nz, na, print_skip) = pars
-    Π, Zvals = ar1(pars)
-    Avals = exp_grid(pars)
-    v_new = similar(v_init)
-    policy = similar(v_init)
+function hpi(v_init, policy, Π, Zvals, Avals, v_new, pars)
+    (; maxiter, toler, print_skip) = pars
+    #Π, Zvals = ar1(pars)
+    #Avals = exp_grid(pars)
+    #v_new = similar(v_init)
+    #policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
