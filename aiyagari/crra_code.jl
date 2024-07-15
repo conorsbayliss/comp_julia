@@ -1,4 +1,6 @@
-pars = (;r = 0.04, # interest rate
+pars = (;A = 1.0, # total factor productivity
+    α = 0.33, # capital share
+    r = 0.00, # interest rate
     w = 1.0, # wage
     β = 0.9, # discount factor
     γ = 2.0, # risk aversion
@@ -7,11 +9,15 @@ pars = (;r = 0.04, # interest rate
     μ = 0.0, # mean of AR1
     σ = 0.003, # std of AR1
     na = 101, # number of asset grid points
+    ϕ = 0.0, # borrowing constraint
     θ = 4.0, # grid expansion factor
     toler = 4e-7, # tolerance
     maxiter = 1000, # maximum no. of iterations
+    toler_prices = 1e-3, # tolerance
+    maxiter_prices = 100, # maximum no. of iterations
     how_iter = 75, # number of Howard iterations
     print_skip = 100, # how often to print
+    print_skip_prices = 10, # how often to print
     lb = 0.0, # lower bound of capital grid
     ub = 2000.0) # upper bound of capital grid
 
@@ -78,12 +84,12 @@ function howard(v, policy, Π, Agrid, Zgrid, tuple)
     return v
 end   
 
-function vfi(v_init, pars)
-    (; maxiter, toler, nz, na, print_skip) = pars
-    Π, Zvals = ar1(pars)
-    Avals = exp_grid(pars)
-    v_new = similar(v_init)
-    policy = similar(v_init)
+function vfi(v_init, policy, Π, Zvals, Avals, v_new, pars)
+    (; maxiter, toler, print_skip) = pars
+    #Π, Zvals = ar1(pars)
+    #Avals = exp_grid(pars)
+    #v_new = similar(v_init)
+    #policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
@@ -105,12 +111,12 @@ function vfi(v_init, pars)
     return v_new, policy
 end
 
-function hpi(v, pol , pars)
-    (; maxiter, toler, nz, na, print_skip) = pars
-    Π, Zvals = ar1(pars)
-    Avals = exp_grid(pars)
-    v_new = similar(v_init)
-    policy = similar(v_init)
+function hpi(v_init, policy, Π, Zvals, Avals, v_new, pars)
+    (; maxiter, toler, print_skip) = pars
+    #Π, Zvals = ar1(pars)
+    #Avals = exp_grid(pars)
+    #v_new = similar(v_init)
+    #policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
