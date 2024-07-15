@@ -12,8 +12,8 @@ pars = (;A = 1.0, # total factor productivity
     θ = 4.0, # grid expansion factor
     toler = 4e-7, # tolerance
     maxiter = 1000, # maximum no. of iterations
-    toler_prices = 4e-7, # tolerance
-    maxiter_prices = 1000, # maximum no. of iterations
+    toler_prices = 1e-3, # tolerance
+    maxiter_prices = 100, # maximum no. of iterations
     how_iter = 75, # number of Howard iterations
     print_skip = 100, # how often to print
     print_skip_prices = 10, # how often to print
