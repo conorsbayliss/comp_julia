@@ -9,6 +9,7 @@ pars = (;A = 1.0, # total factor productivity
     μ = 0.0, # mean of AR1
     σ = 0.003, # std of AR1
     na = 101, # number of asset grid points
+    ϕ = 0.0, # borrowing constraint
     θ = 4.0, # grid expansion factor
     toler = 4e-7, # tolerance
     maxiter = 1000, # maximum no. of iterations
