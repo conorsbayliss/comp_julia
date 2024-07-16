@@ -6,7 +6,7 @@ end
 function interpV_CES(Avals, v_slice, p)
     (; γ) = p
     interp_v = Spline1D(Avals, v_slice, k=1, bc="extrapolate")
-    transformed_interp(x) = interp_v(x)^(1.0-p.γ)
+    transformed_interp(x) = interp_v(x)^(1.0-γ)
     return transformed_interp
 end
 
