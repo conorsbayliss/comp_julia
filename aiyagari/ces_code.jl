@@ -42,11 +42,8 @@ function howard_CES(v, policy, Π, Agrid, Zgrid, p)
 end 
 
 function vfi_CES(v_init, policy, Π, Zvals, Avals, p)
-    (; maxiter, toler, print_skip) = p
-    #Π, Zvals = ar1(p)
-    #Avals = exp_grid(p)
+    (; maxiter, toler, print_skip, r, w) = p
     v_new = similar(v_init)
-    #policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
@@ -63,17 +60,14 @@ function vfi_CES(v_init, policy, Π, Zvals, Avals, p)
         iter += 1
     end
     println("--------------------")
-    println("Converged in $iter iterations")
+    println("Converged in $iter iterations for r = $r and w = $w")
     println("--------------------")
     return v_new, policy
 end
 
 function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
-    (; maxiter, toler, print_skip) = p
-    #Π, Zvals = ar1(p)
-    #Avals = exp_grid(p)
+    (; maxiter, toler, print_skip, r, w) = p
     v_new = similar(v_init)
-    #policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
@@ -91,7 +85,7 @@ function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
         iter += 1
     end
     println("--------------------")
-    println("Converged in $iter iterations")
+    println("Converged in $iter iterations for r = $r and w = $w")
     println("--------------------")
     return v_new, policy
 end
