@@ -1,20 +1,3 @@
-p = (;r = 0.04, # interest rate
-    w = 1.0, # wage
-    β = 0.9, # discount factor
-    γ = 2.0, # risk aversion
-    nz = 19, # number of grid points for z
-    ρ = 0.9, # persistence of AR1
-    μ = 0.0, # mean of AR1
-    σ = 0.003, # std of AR1
-    na = 31, # number of asset grid points
-    θ = 4.0, # grid expansion factor
-    toler = 4e-7, # tolerance
-    maxiter = 1000, # maximum no. of iterations
-    how_iter = 75, # number of Howard iterations
-    print_skip = 100, # how often to print
-    lb = 0.0, # lower bound of capital grid
-    ub = 2000.0) # upper bound of capital grid
-
 function utility_CES(c, p)
     (; γ) = p
     return c^(1-γ)
