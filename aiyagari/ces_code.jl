@@ -16,7 +16,7 @@ function optimise_CES(Avals, Zvals, v_init, v_new, policy, Π, p)
         expected_value = v_init * Π[i,:]
         interpolation = interpV_CES(Avals, expected_value, p)
         for j in 1:na
-            obj_CES(ap) = - (((1-β) * utility_CES(resources(Avals, Zvals, j, i, pars) - ap, pars) + β * interpolation(ap))^(1/(1-γ)))
+            obj_CES(ap) = - (((1-β) * utility_CES(resources(Avals, Zvals, j, i, p) - ap, p) + β * interpolation(ap))^(1/(1-γ)))
             ub = resources(Avals, Zvals, j, i, p)  
             res = optimize(obj_CES, lb, ub)
             policy[j,i] = res.minimizer
