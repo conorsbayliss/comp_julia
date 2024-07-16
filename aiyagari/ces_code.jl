@@ -66,7 +66,7 @@ function vfi_CES(v_init, policy, Π, Zvals, Avals, p)
 end
 
 function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
-    (; maxiter, toler, print_skip, r, w) = p
+    (; maxiter, toler, print_skip, r, w, dampened_howard, ϵ) = p
     v_new = similar(v_init)
     error = toler + 1
     iter = 0
@@ -76,6 +76,9 @@ function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
     while ((error > toler) && (iter < maxiter))
         v_new, policy = optimise_CES(Avals, Zvals, v_init, v_new, policy, Π, p)
         v_new = howard_CES(v_new, policy, Π, Avals, Zvals, p)
+        if dampened_howard == true
+            v_new = ϵ * v_new + (1 - ϵ) * v_init
+        end
         error = maximum(abs.(v_new - v_init) ./ (1 .+ abs.(v_new)))
         v_init .= v_new
         if iter % print_skip == 0
