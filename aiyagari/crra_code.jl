@@ -63,10 +63,7 @@ end
 
 function vfi(v_init, policy, Π, Zvals, Avals, pars)
     (; maxiter, toler, print_skip, r, w) = pars
-    #Π, Zvals = ar1(pars)
-    #Avals = exp_grid(pars)
     v_new = similar(v_init)
-    #policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
@@ -89,11 +86,8 @@ function vfi(v_init, policy, Π, Zvals, Avals, pars)
 end
 
 function hpi(v_init, policy, Π, Zvals, Avals, pars)
-    (; maxiter, toler, print_skip) = pars
-    #Π, Zvals = ar1(pars)
-    #Avals = exp_grid(pars)
+    (; maxiter, toler, print_skip, r, w) = pars
     v_new = similar(v_init)
-    #policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
@@ -111,7 +105,7 @@ function hpi(v_init, policy, Π, Zvals, Avals, pars)
         iter += 1
     end
     println("--------------------")
-    println("Converged in $iter iterations")
+    println("Converged in $iter iterations for r = $r and w = $w")
     println("--------------------")
     return v_new, policy
 end

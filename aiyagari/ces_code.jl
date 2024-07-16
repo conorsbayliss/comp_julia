@@ -1,20 +1,3 @@
-p = (;r = 0.04, # interest rate
-    w = 1.0, # wage
-    β = 0.9, # discount factor
-    γ = 2.0, # risk aversion
-    nz = 19, # number of grid points for z
-    ρ = 0.9, # persistence of AR1
-    μ = 0.0, # mean of AR1
-    σ = 0.003, # std of AR1
-    na = 31, # number of asset grid points
-    θ = 4.0, # grid expansion factor
-    toler = 4e-7, # tolerance
-    maxiter = 1000, # maximum no. of iterations
-    how_iter = 75, # number of Howard iterations
-    print_skip = 100, # how often to print
-    lb = 0.0, # lower bound of capital grid
-    ub = 2000.0) # upper bound of capital grid
-
 function utility_CES(c, p)
     (; γ) = p
     return c^(1-γ)
@@ -33,7 +16,7 @@ function optimise_CES(Avals, Zvals, v_init, v_new, policy, Π, p)
         expected_value = v_init * Π[i,:]
         interpolation = interpV_CES(Avals, expected_value, p)
         for j in 1:na
-            obj_CES(ap) = - (((1-β) * utility_CES(resources(Avals, Zvals, j, i, pars) - ap, pars) + β * interpolation(ap))^(1/(1-γ)))
+            obj_CES(ap) = - (((1-β) * utility_CES(resources(Avals, Zvals, j, i, p) - ap, p) + β * interpolation(ap))^(1/(1-γ)))
             ub = resources(Avals, Zvals, j, i, p)  
             res = optimize(obj_CES, lb, ub)
             policy[j,i] = res.minimizer
@@ -58,12 +41,9 @@ function howard_CES(v, policy, Π, Agrid, Zgrid, p)
     return v
 end 
 
-function vfi_CES(v_init, p)
-    (; maxiter, toler, nz, na, print_skip) = p
-    Π, Zvals = ar1(p)
-    Avals = exp_grid(p)
+function vfi_CES(v_init, policy, Π, Zvals, Avals, p)
+    (; maxiter, toler, print_skip, r, w) = p
     v_new = similar(v_init)
-    policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
@@ -80,17 +60,14 @@ function vfi_CES(v_init, p)
         iter += 1
     end
     println("--------------------")
-    println("Converged in $iter iterations")
+    println("Converged in $iter iterations for r = $r and w = $w")
     println("--------------------")
     return v_new, policy
 end
 
-function hpi_CES(v_init, p)
-    (; maxiter, toler, nz, na, print_skip) = p
-    Π, Zvals = ar1(p)
-    Avals = exp_grid(p)
+function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
+    (; maxiter, toler, print_skip, r, w, dampened_howard, ϵ) = p
     v_new = similar(v_init)
-    policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
@@ -99,6 +76,9 @@ function hpi_CES(v_init, p)
     while ((error > toler) && (iter < maxiter))
         v_new, policy = optimise_CES(Avals, Zvals, v_init, v_new, policy, Π, p)
         v_new = howard_CES(v_new, policy, Π, Avals, Zvals, p)
+        if dampened_howard == true
+            v_new = ϵ * v_new + (1 - ϵ) * v_init
+        end
         error = maximum(abs.(v_new - v_init) ./ (1 .+ abs.(v_new)))
         v_init .= v_new
         if iter % print_skip == 0
@@ -108,7 +88,7 @@ function hpi_CES(v_init, p)
         iter += 1
     end
     println("--------------------")
-    println("Converged in $iter iterations")
+    println("Converged in $iter iterations for r = $r and w = $w")
     println("--------------------")
     return v_new, policy
 end
