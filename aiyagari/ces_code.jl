@@ -41,12 +41,12 @@ function howard_CES(v, policy, Π, Agrid, Zgrid, p)
     return v
 end 
 
-function vfi_CES(v_init, p)
-    (; maxiter, toler, nz, na, print_skip) = p
-    Π, Zvals = ar1(p)
-    Avals = exp_grid(p)
+function vfi_CES(v_init, policy, Π, Zvals, Avals, p)
+    (; maxiter, toler, print_skip) = p
+    #Π, Zvals = ar1(p)
+    #Avals = exp_grid(p)
     v_new = similar(v_init)
-    policy = similar(v_init)
+    #policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
@@ -68,12 +68,12 @@ function vfi_CES(v_init, p)
     return v_new, policy
 end
 
-function hpi_CES(v_init, p)
-    (; maxiter, toler, nz, na, print_skip) = p
-    Π, Zvals = ar1(p)
-    Avals = exp_grid(p)
+function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
+    (; maxiter, toler, print_skip) = p
+    #Π, Zvals = ar1(p)
+    #Avals = exp_grid(p)
     v_new = similar(v_init)
-    policy = similar(v_init)
+    #policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
