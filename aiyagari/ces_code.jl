@@ -6,7 +6,7 @@ end
 function interpV_CES(Avals, v_slice, p)
     (; γ) = p
     interp_v = Spline1D(Avals, v_slice, k=1, bc="extrapolate")
-    transformed_interp(x) = interp_v(x)^(1.0-γ)
+    transformed_interp(x) = interp_v(x)^(1-γ)
     return transformed_interp
 end
 
@@ -42,7 +42,7 @@ function howard_CES(v, policy, Π, Agrid, Zgrid, p)
 end 
 
 function vfi_CES(v_init, policy, Π, Zvals, Avals, p)
-    (; maxiter, toler, print_skip, r, w) = p
+    (; maxiter, toler, print_skip, r_iter, w) = p
     v_new = similar(v_init)
     error = toler + 1
     iter = 0
@@ -60,13 +60,29 @@ function vfi_CES(v_init, policy, Π, Zvals, Avals, p)
         iter += 1
     end
     println("--------------------")
-    println("Converged in $iter iterations for r = $r and w = $w")
+    println("Converged in $iter iterations for r = $r_iter and w = $w")
     println("--------------------")
+    fig1 = Figure(size = (800, 600))
+    ax1 = Axis(fig1[1, 1], title = "Value Functions", xlabel = "Assets", ylabel = "Value")
+    for j in 1:p.nz
+        lines!(ax1, Avals, v_new[:,j], label = "Shock $j")
+    end
+    legend = Legend(fig1[1,2], ax1, "Legend", orientation = :vertical, fontsize = 4)
+    display(fig1)
+
+    fig2 = Figure(size = (800, 600))
+    ax2 = Axis(fig2[1, 1], title = "Policy Functions", xlabel = "Assets Today", ylabel = "Assets Tomorrow")
+    for j in 1:p.nz
+        lines!(ax2, Avals, policy[:,j], label = "Shock $j")
+    end
+    lines!(ax2, Avals, Avals, label = "45 Deg Line", color = :black, linestyle = :dash)
+    legend = Legend(fig2[1,2], ax2, "Legend", orientation = :vertical, fontsize = 4)
+    display(fig2)
     return v_new, policy
 end
 
 function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
-    (; maxiter, toler, print_skip, r, w, dampened_howard, ϵ) = p
+    (; maxiter, toler, print_skip, r_iter, w, dampened_howard, ϵ) = p
     v_new = similar(v_init)
     error = toler + 1
     iter = 0
@@ -77,7 +93,7 @@ function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
         v_new, policy = optimise_CES(Avals, Zvals, v_init, v_new, policy, Π, p)
         v_new = howard_CES(v_new, policy, Π, Avals, Zvals, p)
         if dampened_howard == true
-            v_new = ϵ * v_new + (1 - ϵ) * v_init
+            v_new .= ϵ .* v_new .+ (1 - ϵ) .* v_init
         end
         error = maximum(abs.(v_new - v_init) ./ (1 .+ abs.(v_new)))
         v_init .= v_new
@@ -88,7 +104,23 @@ function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
         iter += 1
     end
     println("--------------------")
-    println("Converged in $iter iterations for r = $r and w = $w")
+    println("Converged in $iter iterations for r = $r_iter and w = $w")
     println("--------------------")
+    fig1 = Figure(size = (800, 600))
+    ax1 = Axis(fig1[1, 1], title = "Value Functions", xlabel = "Assets", ylabel = "Value")
+    for j in 1:p.nz
+        lines!(ax1, Avals, v_new[:,j], label = "Shock $j")
+    end
+    legend = Legend(fig1[1,2], ax1, "Legend", orientation = :vertical, fontsize = 4)
+    display(fig1)
+
+    fig2 = Figure(size = (800, 600))
+    ax2 = Axis(fig2[1, 1], title = "Policy Functions", xlabel = "Assets Today", ylabel = "Assets Tomorrow")
+    for j in 1:p.nz
+        lines!(ax2, Avals, policy[:,j], label = "Shock $j")
+    end
+    lines!(ax2, Avals, Avals, label = "45 Deg Line", color = :black, linestyle = :dash)
+    legend = Legend(fig2[1,2], ax2, "Legend", orientation = :vertical, fontsize = 4)
+    display(fig2)
     return v_new, policy
 end

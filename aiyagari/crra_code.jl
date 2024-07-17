@@ -21,8 +21,8 @@ function exp_grid(pars)
 end
 
 function resources(Avals, Zvals, j, i, pars)
-    (; r, w) = pars
-    return (1+r)*Avals[j] + ( w * exp(Zvals[i]) )
+    (; r_iter, w) = pars
+    return (1+r_iter)*Avals[j] + (w*exp(Zvals[i]))
 end
 
 function interpV(Avals, v_slice)
@@ -62,7 +62,7 @@ function howard(v, policy, Π, Avals, Zvals, pars)
 end   
 
 function vfi(v_init, policy, Π, Zvals, Avals, pars)
-    (; maxiter, toler, print_skip, r, w) = pars
+    (; maxiter, toler, print_skip, r_iter, w) = pars
     v_new = similar(v_init)
     error = toler + 1
     iter = 0
@@ -80,13 +80,13 @@ function vfi(v_init, policy, Π, Zvals, Avals, pars)
         iter += 1
     end
     println("--------------------")
-    println("Converged in $iter iterations for r = $r and w = $w")
+    println("Converged in $iter iterations for r = $r_iter and w = $w")
     println("--------------------")
     return v_new, policy
 end
 
 function hpi(v_init, policy, Π, Zvals, Avals, pars)
-    (; maxiter, toler, print_skip, r, w) = pars
+    (; maxiter, toler, print_skip, r_iter, w) = pars
     v_new = similar(v_init)
     error = toler + 1
     iter = 0
@@ -105,7 +105,7 @@ function hpi(v_init, policy, Π, Zvals, Avals, pars)
         iter += 1
     end
     println("--------------------")
-    println("Converged in $iter iterations for r = $r and w = $w")
+    println("Converged in $iter iterations for r = $r_iter and w = $w")
     println("--------------------")
     return v_new, policy
 end
