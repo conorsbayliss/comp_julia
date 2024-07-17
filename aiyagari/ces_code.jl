@@ -77,7 +77,7 @@ function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
         v_new, policy = optimise_CES(Avals, Zvals, v_init, v_new, policy, Π, p)
         v_new = howard_CES(v_new, policy, Π, Avals, Zvals, p)
         if dampened_howard == true
-            v_new = ϵ * v_new + (1 - ϵ) * v_init
+            v_new .= ϵ .* v_new .+ (1 - ϵ) .* v_init
         end
         error = maximum(abs.(v_new - v_init) ./ (1 .+ abs.(v_new)))
         v_init .= v_new
