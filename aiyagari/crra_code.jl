@@ -22,7 +22,7 @@ end
 
 function resources(Avals, Zvals, j, i, pars)
     (; r, w) = pars
-    return (1+r)*Avals[j] + ( w * exp(Zvals[i]) )
+    return (1+r)*Avals[j] + (w*exp(Zvals[i]))
 end
 
 function interpV(Avals, v_slice)
