@@ -62,22 +62,6 @@ function vfi_CES(v_init, policy, Π, Zvals, Avals, p)
     println("--------------------")
     println("Converged in $iter iterations for r = $r_iter and w = $w")
     println("--------------------")
-    fig1 = Figure(size = (800, 600))
-    ax1 = Axis(fig1[1, 1], title = "Value Functions", xlabel = "Assets", ylabel = "Value")
-    for j in 1:p.nz
-        lines!(ax1, Avals, v_new[:,j], label = "Shock $j")
-    end
-    legend = Legend(fig1[1,2], ax1, "Legend", orientation = :vertical, fontsize = 4)
-    display(fig1)
-
-    fig2 = Figure(size = (800, 600))
-    ax2 = Axis(fig2[1, 1], title = "Policy Functions", xlabel = "Assets Today", ylabel = "Assets Tomorrow")
-    for j in 1:p.nz
-        lines!(ax2, Avals, policy[:,j], label = "Shock $j")
-    end
-    lines!(ax2, Avals, Avals, label = "45 Deg Line", color = :black, linestyle = :dash)
-    legend = Legend(fig2[1,2], ax2, "Legend", orientation = :vertical, fontsize = 4)
-    display(fig2)
     return v_new, policy
 end
 
@@ -106,21 +90,5 @@ function hpi_CES(v_init, policy, Π, Zvals, Avals, p)
     println("--------------------")
     println("Converged in $iter iterations for r = $r_iter and w = $w")
     println("--------------------")
-    fig1 = Figure(size = (800, 600))
-    ax1 = Axis(fig1[1, 1], title = "Value Functions", xlabel = "Assets", ylabel = "Value")
-    for j in 1:p.nz
-        lines!(ax1, Avals, v_new[:,j], label = "Shock $j")
-    end
-    legend = Legend(fig1[1,2], ax1, "Legend", orientation = :vertical, fontsize = 4)
-    display(fig1)
-
-    fig2 = Figure(size = (800, 600))
-    ax2 = Axis(fig2[1, 1], title = "Policy Functions", xlabel = "Assets Today", ylabel = "Assets Tomorrow")
-    for j in 1:p.nz
-        lines!(ax2, Avals, policy[:,j], label = "Shock $j")
-    end
-    lines!(ax2, Avals, Avals, label = "45 Deg Line", color = :black, linestyle = :dash)
-    legend = Legend(fig2[1,2], ax2, "Legend", orientation = :vertical, fontsize = 4)
-    display(fig2)
     return v_new, policy
 end
