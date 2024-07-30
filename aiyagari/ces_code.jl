@@ -3,7 +3,7 @@ using Dierckx, LinearAlgebra, Optim, QuantEcon
 function create_model_CES(;na = 101, nz = 15)
 
     # Create NamedTuple
-    p = (;A = 0.01, # total factor productivity
+    p = (;A = 1.0, # total factor productivity
           α = 0.33, # capital share
           δ = 0.08, # depreciation rate
           r_lb = 0.0, # Lower bound on interest rate
@@ -26,7 +26,7 @@ function create_model_CES(;na = 101, nz = 15)
           print_skip = 100, # Print frequency
           toler = 4e-7, # Tolerance
           toler_prices = 1e-3, # tolerance
-          max_iter_prices = 100, # maximum no. of iterations
+          max_iter_prices = 10, # maximum no. of iterations
           print_skip_prices = 1, # how often to print
           agrid = zeros(Float64, na), # Capital grid
           zgrid = zeros(Float64, nz), # Productivity grid
@@ -75,14 +75,14 @@ function optimise_CES(Avals, Zvals, v_init, v_new, policy, Π, p)
     return v_new, policy
 end
 
-function howard_CES(v, policy, Π, Agrid, Zgrid, p)
+function howard_CES(v, policy, Π, Avals, Zvals, p)
     (; β, na, nz, how_iter, γ) = p
     for _ in 1:how_iter
         for j in 1:nz
             exp_val = v * Π[j,:]
-            interp_e_val = interpV_CES(Agrid, exp_val, p)
+            interp_e_val = interpV_CES(Avals, exp_val, p)
             for i in 1:na
-                obj_CES(ap) = (((1-β) * utility_CES(resources(Agrid, Zgrid, i, j, p) - ap, p) + β * interp_e_val(ap)))^(1/(1-γ))
+                obj_CES(ap) = (((1-β) * utility_CES(resources(Avals, Zvals, i, j, p) - ap, p) + β * interp_e_val(ap)))^(1/(1-γ))
                 v[i,j] = obj_CES(policy[i,j])
             end
         end
@@ -90,15 +90,16 @@ function howard_CES(v, policy, Π, Agrid, Zgrid, p)
     return v
 end  
 
-function vfi_CES(v_init, v_new, policy, p)
-    (; agrid, zgrid, Π, max_iter, toler, print_skip) = p
+function vfi_CES(v_init, policy, Π, Zvals, Avals, p)
+    (; max_iter, toler, print_skip) = p
+    v_new = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
         println("Iterating...")
     end
     while ((error > toler) && (iter < max_iter))
-        v_new, policy = optimise_CES(agrid, zgrid, v_init, v_new, policy, Π, p)
+        v_new, policy = optimise_CES(Avals, Zvals ,v_init, v_new, policy, Π, p)
         error = maximum(abs.(v_new - v_init) ./ (1 .+ abs.(v_new)))
         v_init .= v_new
         if iter % print_skip == 0
@@ -110,16 +111,12 @@ function vfi_CES(v_init, v_new, policy, p)
     println("--------------------")
     println("Converged in $iter iterations")
     println("--------------------")
-
-    return v_new, policy, agrid
-
+    return v_new, policy
 end
 
-function hpi_CES(p)
-    (; na, nz, agrid, zgrid, Π, max_iter, toler, print_skip) = p
-    v_init = ones(na, nz)
+function hpi_CES(v_init, policy, Π, zgrid, agrid, p)
+    (; max_iter, toler, print_skip) = p
     v_new = similar(v_init)
-    policy = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
@@ -139,7 +136,5 @@ function hpi_CES(p)
     println("--------------------")
     println("Converged in $iter iterations")
     println("--------------------")
-
-    return v_new, policy, agrid
-
+    return v_new, policy 
 end
