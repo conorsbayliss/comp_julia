@@ -61,7 +61,7 @@ end
 
 function optimise_CES(Avals, Zvals, v_init, v_new, policy, Π, p)
     (; β, na, nz, lb, γ) = p
-    @Threads.threads for j in 1:nz
+    Threads.@threads for j in 1:nz
         expected_value = v_init * Π[j,:]
         interpolation = interpV_CES(Avals, expected_value, p)
         for i in 1:na

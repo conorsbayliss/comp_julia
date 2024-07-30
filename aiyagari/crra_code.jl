@@ -83,7 +83,7 @@ end
 
 function optimise(Avals, Zvals, v_init, v_new, policy, Π, pars)
     (; β, na, nz, lb) = pars
-    @Threads.threads for i in 1:nz
+    Threads.@threads for i in 1:nz
         expected_value = v_init * Π[i,:]
         interpolation = interpV(Avals, expected_value)
         for j in 1:na
