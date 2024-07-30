@@ -83,7 +83,7 @@ end
 
 function optimise(Avals, Zvals, v_init, v_new, policy, Π, pars)
     (; β, na, nz, lb) = pars
-    for i in 1:nz
+    @Threads.threads for i in 1:nz
         expected_value = v_init * Π[i,:]
         interpolation = interpV(Avals, expected_value)
         for j in 1:na
@@ -137,7 +137,7 @@ function vfi(v_init, policy, Π, Zvals, Avals, pars)
 end
 
 function hpi(v_init, policy, Π, Zvals, Avals, pars)
-    (; _iter, toler, print_skip, r_iter, w) = pars
+    (; max_iter, toler, print_skip, r_iter, w) = pars
     v_new = similar(v_init)
     error = toler + 1
     iter = 0
