@@ -56,19 +56,6 @@ function utility(c, pars)
     end
 end
 
-function ar1(pars)
-    (;ρ, μ, σ, nz) = pars
-    mc = QuantEcon.rouwenhorst(nz, μ, ρ, σ)
-    return mc.p, mc.state_values
-end
-
-function exp_grid(pars)
-    (; na, θ, lb, ub) = pars
-    grid = LinRange(0.0,1.0,na)
-    exp_grid = lb .+ (ub - lb) .* grid.^θ
-    return exp_grid
-end
-
 function resources(Avals, Zvals, j, i, pars)
     (; r_iter, w) = pars
     return (1+r_iter)*Avals[j] + (w*exp(Zvals[i]))
@@ -111,14 +98,14 @@ function howard(v, policy, Π, Avals, Zvals, pars)
 end   
 
 function vfi(v_init, policy, Π, Zvals, Avals, pars)
-    (; maxiter, toler, print_skip, r_iter, w) = pars
+    (; max_iter, toler, print_skip, r_iter, w) = pars
     v_new = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
         println("Iterating...")
     end
-    while ((error > toler) && (iter < maxiter))
+    while ((error > toler) && (iter < max_iter))
         v_new, policy = optimise(Avals, Zvals, v_init, v_new, policy, Π, pars)
         error = maximum(abs.(v_new - v_init) ./ (1 .+ abs.(v_new)))
         v_init .= v_new
@@ -135,14 +122,14 @@ function vfi(v_init, policy, Π, Zvals, Avals, pars)
 end
 
 function hpi(v_init, policy, Π, Zvals, Avals, pars)
-    (; maxiter, toler, print_skip, r_iter, w) = pars
+    (; _iter, toler, print_skip, r_iter, w) = pars
     v_new = similar(v_init)
     error = toler + 1
     iter = 0
     if iter == 0
         println("Iterating...")
     end
-    while ((error > toler) && (iter < maxiter))
+    while ((error > toler) && (iter < max_iter))
         v_new, policy = optimise(Avals, Zvals, v_init, v_new, policy, Π, pars)
         v_new = howard(v_new, policy, Π, Avals, Zvals, pars)
         error = maximum(abs.(v_new - v_init) ./ (1 .+ abs.(v_new)))
