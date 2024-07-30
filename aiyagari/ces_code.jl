@@ -1,3 +1,5 @@
+using Dierckx, LinearAlgebra, Optim, QuantEcon
+
 function create_model_CES(;na = 101, nz = 15)
 
     # Create NamedTuple
@@ -88,11 +90,8 @@ function howard_CES(v, policy, Π, Agrid, Zgrid, p)
     return v
 end  
 
-function vfi_CES(p)
-    (; na, nz, agrid, zgrid, Π, max_iter, toler, print_skip) = p
-    v_init = ones(na, nz)
-    v_new = similar(v_init)
-    policy = similar(v_init)
+function vfi_CES(v_init, v_new, policy, p)
+    (; agrid, zgrid, Π, max_iter, toler, print_skip) = p
     error = toler + 1
     iter = 0
     if iter == 0
