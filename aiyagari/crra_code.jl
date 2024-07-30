@@ -61,6 +61,21 @@ function resources(Avals, Zvals, j, i, pars)
     return (1+r_iter)*Avals[j] + (w*exp(Zvals[i]))
 end
 
+function ar1(pars)
+    (; nz, ρ, μ, σ) = pars
+    mc = rouwenhorst(nz, μ, ρ, σ)
+    Π = mc.p
+    zgrid = mc.state_values
+    return Π, zgrid
+end
+
+function exp_grid(pars)
+    (; na, θ, lb, ub) = pars
+    temp_grid = LinRange(0, 1, na)
+    agrid = lb .+ (ub - lb) .* temp_grid .^ θ
+    return agrid
+end
+
 function interpV(Avals, v_slice)
     interp_v = Spline1D(Avals, v_slice, k=3, bc="extrapolate")
     return interp_v
