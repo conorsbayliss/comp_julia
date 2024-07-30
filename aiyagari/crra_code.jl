@@ -1,3 +1,5 @@
+using Dierckx, LinearAlgebra, Optim, QuantEcon
+
 function create_model_CRRA(;na = 101, nz = 15)
 
     # Create NamedTuple
@@ -44,8 +46,6 @@ function create_model_CRRA(;na = 101, nz = 15)
 
     return p
 end
-
-model_CRRA = create_model_CRRA()
 
 function utility(c, pars)
     (; γ) = pars

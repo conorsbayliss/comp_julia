@@ -1,4 +1,4 @@
-using Dierckx, LinearAlgebra, Optim, QuantEcon
+using Dierckx, LinearAlgebra, Optim
 
 function create_model_CES(;na = 101, nz = 15)
 
