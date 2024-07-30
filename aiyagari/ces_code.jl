@@ -76,19 +76,20 @@ function optimise_CES(Avals, Zvals, v_init, v_new, policy, Π, p)
 end
 
 function howard_CES(v, policy, Π, Avals, Zvals, p)
-    (; β, na, nz, how_iter, γ) = p
+    (; β, na, nz, how_iter, γ, dampened_howard, ϵ) = p
+    v_how = similar(v)
     for _ in 1:how_iter
         for j in 1:nz
             exp_val = v * Π[j,:]
             interp_e_val = interpV_CES(Avals, exp_val, p)
             for i in 1:na
                 obj_CES(ap) = (((1-β) * utility_CES(resources(Avals, Zvals, i, j, p) - ap, p) + β * interp_e_val(ap)))^(1/(1-γ))
-                v[i,j] = obj_CES(policy[i,j])
+                v_how[i,j] = obj_CES(policy[i,j])
             end
         end
     end
     return v
-end  
+end
 
 function vfi_CES(v_init, policy, Π, Zvals, Avals, p)
     (; max_iter, toler, print_skip) = p
