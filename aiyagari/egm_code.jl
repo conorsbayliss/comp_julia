@@ -77,8 +77,6 @@ function resources(i, j, p)
     return (1+r_iter) * agrid[i] + w * exp(zgrid[j])
 end
 
-
-
 function invariant_distribution(M, O, X, Y, Inv, policy, p)
     (; Π, agrid, n, na, nz) = p
     for i in 1:na
@@ -118,4 +116,7 @@ function labour_supply(p)
     L = L' * zgrid
     return L
 end
-         
+    
+function egm_aiyagari(p)
+    (;α, β, δ, A, Π, na, nz, ϕ, ) = p
+end
