@@ -1,6 +1,6 @@
 using Dierckx, Optim, LinearAlgebra, QuantEcon
 
-function create_EGM_model_aiyagari(;nk = 101, nz = 19)
+function create_EGM_model_aiyagari(;na = 101, nz = 19)
 
     p = (; 
         ## Structural parameters ##
@@ -11,7 +11,7 @@ function create_EGM_model_aiyagari(;nk = 101, nz = 19)
          δ = 0.1, # Depreciation rate
 
         ## Grid parameters ##
-         nk = nk, # Number of capital grid points
+         na = na, # Number of capital grid points
          nz = nz, # Number of productivity grid points
          θ = 2, # Grid expansion parameter
          lb = 10^-4, # Lower bound of capital grid
@@ -21,7 +21,7 @@ function create_EGM_model_aiyagari(;nk = 101, nz = 19)
          σ = 0.003, # Standard deviation of productivity
 
         ## Initiliase grids ##
-         kgrid = LinRange(0.0,1.0,nk), # Capital grid
+         agrid = LinRange(0.0,1.0,na), # Capital grid
          zgrid = LinRange(0.0,1.0,nz), # Productivity grid
          Π = zeros(Float64, nz, nz), # Transition matrix
 
@@ -43,11 +43,11 @@ function create_EGM_model_aiyagari(;nk = 101, nz = 19)
          zgrid, Π = mc.state_values, mc.p
 
         ## Create capital grid ##
-         temp_grid = LinRange(0.0,1.0,nk)
-         kgrid = p.lb .+ (p.ub - p.lb) * (temp_grid .^ p.θ)
+         temp_grid = LinRange(0.0,1.0,na)
+         agrid = p.lb .+ (p.ub - p.lb) * (temp_grid .^ p.θ)
 
         ## Return new NamedTuple ##
-         p = (p..., kgrid = kgrid, zgrid = zgrid, Π = Π)
+         p = (p..., agrid = agrid, zgrid = zgrid, Π = Π)
 
         return p
 
