@@ -17,7 +17,7 @@ function create_EGM_model_aiyagari(;na = 101, nz = 19)
 
         ## Grid parameters ##
          θ = 2, # Grid expansion parameter
-         lb = 10^-4, # Lower bound of capital grid
+         lb = 0, # Lower bound of capital grid
          ub = 500.0, # Upper bound of capital grid
          ρ = 0.9, # Persistence of productivity
          μ = 0.0, # Mean of productivity
@@ -55,6 +55,29 @@ function create_EGM_model_aiyagari(;na = 101, nz = 19)
         return p
 
 end
+
+function utility(c)
+    if model.γ == 1.0
+        return log(c)
+    else
+        return (c^(1-model.γ)-1) / (1-model.γ)
+    end
+end
+
+function marginal_utility(c)
+    return c^(-model.γ)
+end
+
+function inverse_marginal_utility(u)
+    return u^(-1/model.γ)
+end
+
+function resources(i, j, p)
+    (; agrid, zgrid, w, r_iter) = p
+    return (1+r_iter) * agrid[i] + w * exp(zgrid[j])
+end
+
+
 
 function invariant_distribution(M, O, X, Y, Inv, policy, p)
     (; Π, agrid, n, na, nz) = p
