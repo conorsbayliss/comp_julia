@@ -33,11 +33,12 @@ function create_EGM_model_aiyagari(;na = 101, nz = 19)
          r_lb = 0.0, # Lower bound of interest rate
          r_ub = 0.1, # Upper bound of interest rate
          r_iter = 0.0, # Initial guess for interest rate
-         ϕ = 0.0, # Borrowing constraint
 
         ## Other ##
-         toler = 1e-6, # Tolerance
-         maxiter = 500, # Maximum number of iterations
+         toler_pol = 1e-6, # Tolerance on policies
+         toler_price = 1e-3, # Tolerance on prices
+         maxiter_pol = 500, # Maximum number of iterations on policies
+         maxiter_prices = 100, # Maximum number of iterations on prices
          print_skip_pol = 5, # Print every x iterations in policy step
          print_skip_val = 50) # Print every y iterations in value step
 
@@ -76,8 +77,6 @@ function resources(i, j, p)
     (; agrid, zgrid, w, r_iter) = p
     return (1+r_iter) * agrid[i] + w * exp(zgrid[j])
 end
-
-
 
 function invariant_distribution(M, O, X, Y, Inv, policy, p)
     (; Π, agrid, n, na, nz) = p
@@ -118,4 +117,55 @@ function labour_supply(p)
     L = L' * zgrid
     return L
 end
-         
+
+function initial_guess(p)
+    (; na, nz) = p
+    cons = zeros(na,nz)
+    for i in 1:na
+        for j in 1:nz
+            cons[i,j] = 1/2 * resources(i,j,p)
+        end
+    end
+    return cons
+end
+    
+function egm_find_policies(p)
+     # Unpack parameters
+    (;β, Π, na, nz, toler_pol, print_skip_pol, maxiter_pol, w, r_iter) = p
+
+     # Initialise matrices
+     cons_1 = initial_guess(p)
+     cons_2 = zeros(na, nz)
+     savings = zeros(na, nz)
+
+     # Set initial error and iteration counter
+     error_pol = toler_pol
+     iter_pol = 0
+     if iter_pol == 0
+        println("/// Finding Policy Functions... ///")
+     end
+
+     while error_pol >= && (iter_pol < maxiter_pol)
+
+
+        if iter_pol % print_skip_pol == 0
+            println("--------------------")
+            println("Iteration: $iter_pol, Error: $error_pol")
+        end
+
+        cons_1 = copy(cons_2)
+        iter += 1
+    end
+
+    # Check if converged
+    if iter_pol == maxiter_pol
+        println("--------------------")
+        println("Failed to converge in $maxiter_pol iterations")
+    else
+        println("--------------------")
+        println("/// Found Policy Functions ///")
+    end
+
+    # Return consumption and savings policy functions
+    return savings, cons_2
+end
