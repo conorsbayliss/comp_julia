@@ -189,8 +189,10 @@ function egm_find_policies(p)
         println("--------------------")
         println("/// Found Policy Functions ///")
     end
-    
-    c = (1+r_iter) .* agrid + (w .* exp.(zgrid)) - g
+
+    # Calculate consumption
+    c = (1+r_iter) .* agrid .+ (w .* exp.(zgrid)') .- g
+
     # Return consumption and savings policy functions
     return g, c
 end
