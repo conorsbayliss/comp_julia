@@ -37,7 +37,7 @@ function create_EGM_model_aiyagari(;na = 101, nz = 19)
         ## Other ##
          toler_pol = 1e-6, # Tolerance on policies
          toler_price = 1e-3, # Tolerance on prices
-         maxiter_pol = 0, # Maximum number of iterations on policies
+         maxiter_pol = 500, # Maximum number of iterations on policies
          maxiter_prices = 100, # Maximum number of iterations on prices
          print_skip_pol = 5, # Print every x iterations in policy step
          print_skip_val = 50) # Print every y iterations in value step
