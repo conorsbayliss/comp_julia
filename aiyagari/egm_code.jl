@@ -18,7 +18,7 @@ function create_EGM_model_aiyagari(;na = 101, nz = 19)
         ## Grid parameters ##
          θ = 2, # Grid expansion parameter
          lb = 0, # Lower bound of capital grid
-         ub = 500.0, # Upper bound of capital grid
+         ub = 200.0, # Upper bound of capital grid
          ρ = 0.9, # Persistence of productivity
          μ = 0.0, # Mean of productivity
          σ = 0.003, # Standard deviation of productivity
@@ -32,7 +32,7 @@ function create_EGM_model_aiyagari(;na = 101, nz = 19)
          w = 1.0, # wage
          r_lb = 0.0, # Lower bound of interest rate
          r_ub = 0.1, # Upper bound of interest rate
-         r_iter = 0.0, # Initial guess for interest rate
+         r_iter = 0.05, # Initial guess for interest rate
 
         ## Other ##
          toler_pol = 1e-6, # Tolerance on policies
@@ -74,7 +74,7 @@ function inverse_marginal_utility(u)
 end
 
 function resources(i, j)
-    return (1+p.r_iter) * p.agrid[i] + p.w * exp(p.zgrid[j])
+    return (1+model.r_iter) * model.agrid[i] + model.w * exp(model.zgrid[j])
 end
 
 function invariant_distribution(M, O, X, Y, Inv, policy, p)
@@ -119,24 +119,29 @@ end
 
 function initial_guess(p)
     (; na, nz) = p
-    cons = zeros(na,nz)
+    a_init = zeros(na,nz)
     for i in 1:na
         for j in 1:nz
-            cons[i,j] = 1/2 * resources(i,j)
+            a_init[i,j] = 1/2 * resources(i,j)
         end
     end
-    return cons
+    return a_init
 end
     
 function egm_find_policies(p)
      # Unpack parameters
-    (;β, Π, na, nz, toler_pol, print_skip_pol, maxiter_pol, r_iter) = p
+     (;β, Π, na, nz, toler_pol, print_skip_pol, maxiter_pol, r_iter, agrid, w, zgrid) = p
 
      # Initialise matrices
-     cons_1 = initial_guess(p)
-     cons_2 = zeros(na, nz)
-     cons_3 = zeros(na, nz)
-     savings = zeros(na, nz)
+     a_init = initial_guess(p)
+     assets_today = zeros(na, nz)
+     g = zeros(na, nz)
+     rearrange_budget = zeros(na, nz)
+     for i in 1:na
+         for j in 1:nz
+            rearrange_budget[i,j] = agrid[i] - w * exp(zgrid[j])
+         end
+     end
 
      # Set initial error and iteration counter
      error_pol = toler_pol
@@ -148,36 +153,20 @@ function egm_find_policies(p)
     while (error_pol >= toler_pol) && (iter_pol <= maxiter_pol)
 
         # Calculate new consumption levels
-        cons_2 = inverse_marginal_utility.((β * (1+r_iter)) .* (Π * marginal_utility.(cons_1))')
-
+        cons = inverse_marginal_utility.((β * (1+r_iter)) .* (marginal_utility.(a_init) * Π'))
+        #cons[cons .< 0] .= 0
         # Use the budget constraint to find today's assets
-        savings = (resources .- cons_2) ./ (1+r_iter)
+        assets_today = (rearrange_budget .+ cons) ./ (1+r_iter)
 
-        ### Create indicator matrices for where savings are ###
-        ### less than borrowing constraint or greater than the upper bound ###
-        sav_bool_lb = savings .< agrid[1]
-        sav_bool_ub = savings .> agrid[end]
-        other = .! (sav_bool_lb .+ sav_bool_ub)
-        
         for j in 1:nz
-            for i in 1:na
-                if sav_bool_lb[i,j] == 1
-                    savings[i,j] = agrid[1]
-                    cons_2[i,j] = resources(i,j) - agrid[1]
-                end
-                if sav_bool_ub[i,j] == 1
-                    savings[i,j] = agrid[end]
-                    cons_2[i,j] = resources(i,j) - agrid[end]
-                end
-                if other[i,j] == 1
-                    spline = Spline1D(cons_2[:,j], agrid, k=1, bc="extrapolate")
-                    cons_3[i,j] = spline(agrid[i])
-                end
-            end
+            spline = Spline1D(assets_today[:,j], agrid, k=1, bc="extrapolate")
+            g[:,j] = spline.(agrid)
         end
 
+        g = max.(g, 0.0)
+
         # Calculate error
-        error_pol = maximum((abs.(cons_3 - cons_1)) / (1 .+ cons_1))
+        error_pol = maximum((abs.(g - a_init)))
 
         # Keep track of iteration and error
         if iter_pol % print_skip_pol == 0
@@ -186,8 +175,9 @@ function egm_find_policies(p)
         end
 
         # Go to the next iteration
-        cons_1 = copy(cons_3)
-        iter += 1
+        a_init = copy(g)
+        iter_pol += 1
+
     end
 
     # Check if converged
@@ -200,5 +190,5 @@ function egm_find_policies(p)
     end
     
     # Return consumption and savings policy functions
-    return savings, cons_3
+    return g
 end
