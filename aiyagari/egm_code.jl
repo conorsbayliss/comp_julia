@@ -37,7 +37,7 @@ function create_EGM_model_aiyagari(;na = 101, nz = 19)
         ## Other ##
          toler_pol = 1e-6, # Tolerance on policies
          toler_price = 1e-3, # Tolerance on prices
-         maxiter_pol = 500, # Maximum number of iterations on policies
+         maxiter_pol = 0, # Maximum number of iterations on policies
          maxiter_prices = 100, # Maximum number of iterations on prices
          print_skip_pol = 5, # Print every x iterations in policy step
          print_skip_val = 50) # Print every y iterations in value step
@@ -136,6 +136,7 @@ function egm_find_policies(p)
      a_init = initial_guess(p)
      assets_today = zeros(na, nz)
      g = zeros(na, nz)
+     c = zeros(na, nz)
      rearrange_budget = zeros(na, nz)
      for i in 1:na
          for j in 1:nz
@@ -154,7 +155,7 @@ function egm_find_policies(p)
 
         # Calculate new consumption levels
         cons = inverse_marginal_utility.((β * (1+r_iter)) .* (marginal_utility.(a_init) * Π'))
-        #cons[cons .< 0] .= 0
+
         # Use the budget constraint to find today's assets
         assets_today = (rearrange_budget .+ cons) ./ (1+r_iter)
 
@@ -166,7 +167,7 @@ function egm_find_policies(p)
         g = max.(g, 0.0)
 
         # Calculate error
-        error_pol = maximum((abs.(g - a_init)))
+        error_pol = maximum((abs.(g - a_init)) ./ (1 .+ abs.(a_init)))
 
         # Keep track of iteration and error
         if iter_pol % print_skip_pol == 0
@@ -189,6 +190,7 @@ function egm_find_policies(p)
         println("/// Found Policy Functions ///")
     end
     
+    c = (1+r_iter) .* agrid + (w .* exp.(zgrid)) - g
     # Return consumption and savings policy functions
-    return g
+    return g, c
 end
