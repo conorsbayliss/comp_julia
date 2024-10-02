@@ -130,7 +130,7 @@ end
     
 function egm_find_policies(p)
      # Unpack parameters
-    (;β, Π, na, nz, toler_pol, print_skip_pol, maxiter_pol, w, r_iter) = p
+    (;β, Π, na, nz, toler_pol, print_skip_pol, maxiter_pol, r_iter) = p
 
      # Initialise matrices
      cons_1 = initial_guess(p)
