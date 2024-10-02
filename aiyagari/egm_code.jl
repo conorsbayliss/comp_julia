@@ -135,6 +135,7 @@ function egm_find_policies(p)
      # Initialise matrices
      cons_1 = initial_guess(p)
      cons_2 = zeros(na, nz)
+     cons_3 = zeros(na, nz)
      savings = zeros(na, nz)
 
      # Set initial error and iteration counter
@@ -158,8 +159,8 @@ function egm_find_policies(p)
         sav_bool_ub = savings .> agrid[end]
         other = .! (sav_bool_lb .+ sav_bool_ub)
         
-        for i in 1:na
-            for j in 1:nz
+        for j in 1:nz
+            for i in 1:na
                 if sav_bool_lb[i,j] == 1
                     savings[i,j] = agrid[1]
                     cons_2[i,j] = resources(i,j) - agrid[1]
@@ -169,11 +170,14 @@ function egm_find_policies(p)
                     cons_2[i,j] = resources(i,j) - agrid[end]
                 end
                 if other[i,j] == 1
-                    spline = Spline1D(agrid, cons_2[:,j], k=1, bc="extrapolate")
-                    cons_3[i,j] = spline()
+                    spline = Spline1D(cons_2[:,j], agrid, k=1, bc="extrapolate")
+                    cons_3[i,j] = spline(agrid[i])
                 end
             end
         end
+
+        # Calculate error
+        error_pol = maximum((abs.(cons_3 - cons_1)) / (1 .+ cons_1))
 
         # Keep track of iteration and error
         if iter_pol % print_skip_pol == 0
@@ -182,7 +186,7 @@ function egm_find_policies(p)
         end
 
         # Go to the next iteration
-        cons_1 = copy(cons_2)
+        cons_1 = copy(cons_3)
         iter += 1
     end
 
@@ -194,7 +198,7 @@ function egm_find_policies(p)
         println("--------------------")
         println("/// Found Policy Functions ///")
     end
-
+    
     # Return consumption and savings policy functions
-    return savings, cons_2
+    return savings, cons_3
 end
