@@ -1,8 +1,8 @@
 using Dierckx, Optim, LinearAlgebra, QuantEcon
 
 function create_EGM_model_aiyagari(;na = 101, nz = 19)
-    # Create NamedTuple
-    p = (; 
+        # Create NamedTuple
+         p = (; 
         ## Number of states ##
          n = na * nz, # Total number of states
          na = na, # Number of capital grid points
