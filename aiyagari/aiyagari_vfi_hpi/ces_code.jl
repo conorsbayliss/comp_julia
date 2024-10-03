@@ -34,7 +34,7 @@ function create_CES_model(;na = 101,
           θ = 4.0, # Grid expansion parameter
           ϕ = 0.0, # Borrowing constraint
           lb = 0.0, # Lower bound for assets
-          ub = 1_000.0, # Upper bound for assets
+          ub = 10_000.0, # Upper bound for assets
 
           ### Other, VFI/HPI ###
           toler = 4e-7, # Tolerance for VFI/hpi
@@ -305,14 +305,14 @@ function equilibrium_hpi_CES(p)
     while ((error > toler_prices) && (iter < max_iter_prices))
         println("////////////////////")
         println("Price Iteration: $iter")
-        push!(interest_rates, r_iter)
         r_iter = (p.r_lb + p.r_ub) / 2
+        push!(interest_rates, r_iter)
         Kd = ((A^α * L ^ (1-α)) / (r_iter + δ))^1/(1-α)
         push!(capital_demand, Kd)
         w_iter = (1-α) * A * (Kd/L)^α
-        Φ = w_iter * (exp(minimum(Zvals))/r_iter)
+        Φ = w_iter * (exp(minimum(zgrid))/r_iter)
         if ϕ > 0
-            ϕ_iter = min(Φ, exp(minimum(Zvals)))
+            ϕ_iter = min(Φ, exp(minimum(zgrid)))
             p = (; p..., ϕ = ϕ_iter, r_iter = r_iter, w = w_iter)
         else
             p = (; p..., r_iter = r_iter, w = w_iter)
@@ -345,7 +345,7 @@ function equilibrium_hpi_CES(p)
     end
     println("r = $(p.r_iter), w = $(p.w)")
     println("%%%%%%%%%%%%%%%%%%%%")
-    return v_init, policy, Invariant, wealth
+    return v_init, policy, Invariant, wealth, capital_demand, capital_supply, interest_rates
 end
 
 function gini_coeff(distribution, wealth, p)
