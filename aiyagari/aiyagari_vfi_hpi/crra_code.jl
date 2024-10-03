@@ -1,6 +1,10 @@
 using Dierckx, LinearAlgebra, Optim, QuantEcon
 
-function create_CRRA_model(;na = 101, nz = 19, γ = 1.0, β = 0.9)
+function create_CRRA_model(;na = 101,
+                            nz = 19, 
+                            γ = 1.0, 
+                            β = 0.9, 
+                            how_iter = 25)
 
     p = (;
           ### N ###
@@ -36,7 +40,7 @@ function create_CRRA_model(;na = 101, nz = 19, γ = 1.0, β = 0.9)
           toler = 4e-7, # Tolerance for VFI/hpi
           print_skip = 100, # Print every n iterations
           max_iter = 1_000, # Maximum number of iterations
-          how_iter = 10, # Number of Howard iterations
+          how_iter = how_iter, # Number of Howard iterations
 
           ### Other, prices ###
           toler_prices = 1e-3, # Tolerance for prices
@@ -76,12 +80,13 @@ function utility(c, p)
     end
 end
 
-function resources(agrid, zgrid, j, i, p)
-    (; r_iter, w) = p
-    return (1+r_iter)*agrid[j] + (w * exp(zgrid[i]))
+function resources(i, j, p)
+    (; r_iter, w, agrid, zgrid) = p
+    return (1+r_iter)*agrid[i] + (w * exp(zgrid[j]))
 end
 
-function interpV(agrid, v_slice)
+function interpV(v_slice, p)
+    (; agrid) = p
     interp_v = Spline1D(agrid, v_slice, k=3, bc="extrapolate")
     return interp_v
 end
@@ -127,29 +132,29 @@ function labour_supply(p)
 end
 
 function optimise(v_init, v_new, policy, p)
-    (; β, na, nz, lb, agrid, zgrid, Π) = p
-    Threads.@threads for i in 1:nz
-        expected_value = v_init * Π[i,:]
-        interpolation = interpV(agrid, expected_value)
-        for j in 1:na
-            obj(ap) = - (utility(resources(agrid, zgrid, j, i, p) - ap, p) + β * interpolation(ap))
-            ub = resources(agrid, zgrid, j, i, p)  
+    (; β, na, nz, lb, Π) = p
+    Threads.@threads for j in 1:nz
+        expected_value = v_init * Π[j,:]
+        interpolation = interpV(expected_value, p)
+        for i in 1:na
+            obj(ap) = - (utility(resources(i, j, p) - ap, p) + β * interpolation(ap))
+            ub = resources(i, j, p)  
             res = optimize(obj, lb, ub)
-            policy[j,i] = res.minimizer
-            v_new[j,i] = -res.minimum
+            policy[i, j] = res.minimizer
+            v_new[i, j] = -res.minimum
         end
     end
     return v_new, policy
 end
 
 function howard(v, policy, p)
-    (; β, na, nz, how_iter, agrid, zgrid, Π) = p
+    (; β, na, nz, how_iter, Π) = p
     for _ in 1:how_iter
         for j in 1:nz
             exp_val = v * Π[j,:]
-            interp_e_val = interpV(agrid, exp_val)
+            interp_e_val = interpV(exp_val, p)
             for i in 1:na
-                obj(ap) = (utility(resources(agrid, zgrid, i, j, p) - ap, p) + β * interp_e_val(ap))
+                obj(ap) = (utility(resources(i, j, p) - ap, p) + β * interp_e_val(ap))
                 v[i,j] = obj(policy[i,j])
             end
         end
@@ -182,7 +187,7 @@ function vfi(v_init, policy, p)
 end
 
 function hpi(v_init, policy, p)
-    (; max_iter, toler, print_skip) = p
+    (; max_iter, toler, print_skip, r_iter, w) = p
     v_new = similar(v_init)
     error = toler + 1
     iter = 0
@@ -218,6 +223,7 @@ function equilibrium_vfi_crra(p)
     wealth = zeros(na,nz)
     capital_demand = []
     capital_supply = []
+    interest_rates = []
     L = labour_supply(p)
     Ks, Kd = 1, 1
     iter = 0
@@ -229,6 +235,7 @@ function equilibrium_vfi_crra(p)
         println("////////////////////")
         println("Price Iteration: $iter")
         r_iter = (p.r_lb + p.r_ub) / 2
+        push!(interest_rates, r_iter)
         Kd = ((A^α * L ^ (1-α)) / (r_iter + δ))^1/(1-α)
         push!(capital_demand, Kd)
         w_iter = (1-α) * A * (Kd/L)^α
@@ -267,5 +274,72 @@ function equilibrium_vfi_crra(p)
     end
     println("r = $(p.r_iter), w = $(p.w)")  
     println("%%%%%%%%%%%%%%%%%%%%")
-    return v_init, policy, Invariant, wealth, capital_demand, capital_supply
+    return v_init, policy, Invariant, wealth, capital_demand, capital_supply, interest_rates
+end
+
+function equilibrium_hpi_crra(p)
+    (; n, na, nz, toler_prices, max_iter_prices, print_skip_prices, A, α, ϕ, δ, zgrid, agrid) = p
+    M = zeros(na, nz, na, nz)
+    O = zeros(n, n)
+    X = zeros(n+1,n)
+    Y = zeros(n+1)
+    Inv = zeros(n)
+    v_init = zeros(na,nz)
+    policy = similar(v_init)
+    wealth = zeros(na,nz)
+    L = labour_supply(p)
+    capital_demand = []
+    capital_supply = []
+    interest_rates = []
+    Ks, Kd = 1, 1
+    iter = 0
+    error = toler_prices + 1
+    if iter == 0
+        println("Iterating on prices...")
+    end
+    while ((error > toler_prices) && (iter < max_iter_prices))
+        println("////////////////////")
+        println("Price Iteration: $iter")
+        r_iter = (p.r_lb + p.r_ub) / 2
+        push!(interest_rates, r_iter)
+        Kd = ((A^α * L ^ (1-α)) / (r_iter + δ))^1/(1-α)
+        push!(capital_demand, Kd)
+        w_iter = (1-α) * A * (Kd/L)^α
+        Φ = w_iter * (exp(minimum(zgrid))/r_iter)
+        if ϕ > 0
+            ϕ_iter = min(Φ, exp(minimum(zgrid)))
+            p = (; p..., ϕ = ϕ_iter, r_iter = r_iter, w = w_iter)
+        else
+            p = (; p..., r_iter = r_iter, w = w_iter)
+        end
+        v_new, policy = hpi(v_init, policy, p)
+        Invariant = invariant_distribution(M, O, X, Y, Inv, policy, p)
+        G = reshape(policy .- ϕ, n, 1)
+        Ks = dot(Invariant', G)
+        push!(capital_supply, Ks)
+        diff = Ks - Kd
+        error = abs(diff)
+        if diff > 0
+            p = (; p..., r_ub = r_iter)
+        else
+            p = (; p..., r_lb = r_iter)
+        end
+        if iter % print_skip_prices == 0
+            println("%%%%%%%%%%%%%%%%%%%%")
+            println("Iter = $iter, Ks = $Ks, Kd = $Kd, diff = $diff")
+            println("%%%%%%%%%%%%%%%%%%%%")
+        end
+        v_init .= v_new
+        iter += 1
+    end
+    Invariant = reshape(Invariant, na, nz)
+    for i in 1:na
+        for j in 1:nz
+            wealth[i,j] = p.w * exp(zgrid[j]) + (1 + p.r_iter) * agrid[i]
+        end
+    end
+    println("%%%%%%%%%%%%%%%%%%%%")
+    println("r = $(p.r_iter), w = $(p.w)")  
+    println("%%%%%%%%%%%%%%%%%%%%")
+    return v_init, policy, Invariant, wealth, capital_demand, capital_supply, interest_rates
 end
