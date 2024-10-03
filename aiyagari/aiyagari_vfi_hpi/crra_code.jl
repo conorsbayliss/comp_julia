@@ -221,9 +221,6 @@ function equilibrium_vfi_crra(p)
     v_init = zeros(na,nz)
     policy = similar(v_init)
     wealth = zeros(na,nz)
-    capital_demand = []
-    capital_supply = []
-    interest_rates = []
     L = labour_supply(p)
     Ks, Kd = 1, 1
     iter = 0
@@ -235,9 +232,7 @@ function equilibrium_vfi_crra(p)
         println("////////////////////")
         println("Price Iteration: $iter")
         r_iter = (p.r_lb + p.r_ub) / 2
-        push!(interest_rates, r_iter)
         Kd = ((A^α * L ^ (1-α)) / (r_iter + δ))^1/(1-α)
-        push!(capital_demand, Kd)
         w_iter = (1-α) * A * (Kd/L)^α
         Φ = w_iter * (exp(minimum(zgrid))/r_iter)
         if ϕ > 0
@@ -250,7 +245,6 @@ function equilibrium_vfi_crra(p)
         Invariant = invariant_distribution(M, O, X, Y, Inv, policy, p)
         G = reshape(policy .- ϕ, n, 1)
         Ks = dot(Invariant', G)
-        push!(capital_supply, Ks)
         diff = Ks - Kd
         error = abs(diff)
         if diff > 0
@@ -274,7 +268,7 @@ function equilibrium_vfi_crra(p)
     end
     println("r = $(p.r_iter), w = $(p.w)")  
     println("%%%%%%%%%%%%%%%%%%%%")
-    return v_init, policy, Invariant, wealth, capital_demand, capital_supply, interest_rates
+    return v_init, policy, Invariant, wealth
 end
 
 function equilibrium_hpi_crra(p)
@@ -288,9 +282,6 @@ function equilibrium_hpi_crra(p)
     policy = similar(v_init)
     wealth = zeros(na,nz)
     L = labour_supply(p)
-    capital_demand = []
-    capital_supply = []
-    interest_rates = []
     Ks, Kd = 1, 1
     iter = 0
     error = toler_prices + 1
@@ -301,9 +292,7 @@ function equilibrium_hpi_crra(p)
         println("////////////////////")
         println("Price Iteration: $iter")
         r_iter = (p.r_lb + p.r_ub) / 2
-        push!(interest_rates, r_iter)
         Kd = ((A^α * L ^ (1-α)) / (r_iter + δ))^1/(1-α)
-        push!(capital_demand, Kd)
         w_iter = (1-α) * A * (Kd/L)^α
         Φ = w_iter * (exp(minimum(zgrid))/r_iter)
         if ϕ > 0
@@ -316,7 +305,6 @@ function equilibrium_hpi_crra(p)
         Invariant = invariant_distribution(M, O, X, Y, Inv, policy, p)
         G = reshape(policy .- ϕ, n, 1)
         Ks = dot(Invariant', G)
-        push!(capital_supply, Ks)
         diff = Ks - Kd
         error = abs(diff)
         if diff > 0
@@ -340,7 +328,7 @@ function equilibrium_hpi_crra(p)
     end
     println("r = $(p.r_iter), w = $(p.w)")  
     println("%%%%%%%%%%%%%%%%%%%%")
-    return v_init, policy, Invariant, wealth, capital_demand, capital_supply, interest_rates
+    return v_init, policy, Invariant, wealth
 end
 
 function gini_coeff(distribution, wealth, p)
