@@ -1,6 +1,6 @@
 using Dierckx, Optim, LinearAlgebra, QuantEcon
 
-function create_EGM_model_aiyagari(;na = 101, nz = 19)
+function create_EGM_model_aiyagari(;na = 301, nz = 19)
 
     p = (; 
         ## Number of states ##
@@ -11,14 +11,14 @@ function create_EGM_model_aiyagari(;na = 101, nz = 19)
         ## Structural parameters ##
          α = 0.33, # Capital share
          β = 0.96, # Discount factor
-         A = 0.08, # Productivity 
+         A = 0.8, # Productivity 
          γ = 2.0, # Risk aversion
          δ = 0.1, # Depreciation rate
 
         ## Grid parameters ##
          θ = 2, # Grid expansion parameter
          lb = 0, # Lower bound of capital grid
-         ub = 200.0, # Upper bound of capital grid
+         ub = 2000.0, # Upper bound of capital grid
          ρ = 0.9, # Persistence of productivity
          μ = 0.0, # Mean of productivity
          σ = 0.003, # Standard deviation of productivity
@@ -30,17 +30,17 @@ function create_EGM_model_aiyagari(;na = 101, nz = 19)
 
         ## Initialise prices and borrowing constraint ##
          w = 1.0, # wage
-         r_lb = 0.0, # Lower bound of interest rate
-         r_ub = 0.1, # Upper bound of interest rate
-         r_iter = 0.05, # Initial guess for interest rate
+         R_lb = 0.91, # Lower bound of interest rate
+         R_ub = 0.95, # Upper bound of interest rate
+         R_iter = 1.0, # Initial guess for interest rate
 
         ## Other ##
          toler_pol = 1e-6, # Tolerance on policies
-         toler_price = 1e-3, # Tolerance on prices
+         toler_prices = 1e-3, # Tolerance on prices
          maxiter_pol = 500, # Maximum number of iterations on policies
          maxiter_prices = 100, # Maximum number of iterations on prices
-         print_skip_pol = 5, # Print every x iterations in policy step
-         print_skip_val = 50) # Print every y iterations in value step
+         print_skip_pol = 500, # Print every x iterations in policy step
+         print_skip_prices = 1) # Print every y iterations in value step
 
         ## Rouwenhorst ##
          mc = rouwenhorst(p.nz, p.μ, p.ρ, p.σ)
@@ -51,7 +51,7 @@ function create_EGM_model_aiyagari(;na = 101, nz = 19)
          agrid = p.lb .+ (p.ub - p.lb) * (temp_grid .^ p.θ)
 
         ## Return new NamedTuple ##
-         p = (p..., agrid = agrid, zgrid = zgrid, Π = Π)
+         p = (p..., agrid = agrid, zgrid = zgrid, Π = Π, R_lb = 1-p.δ, R_ub = 1/p.β)
 
         return p
 
@@ -74,7 +74,7 @@ function inverse_marginal_utility(u)
 end
 
 function resources(i, j)
-    return (1+model.r_iter) * model.agrid[i] + model.w * exp(model.zgrid[j])
+    return (model.R_iter) * model.agrid[i] + model.w * exp(model.zgrid[j])
 end
 
 function invariant_distribution(M, O, X, Y, Inv, policy, p)
@@ -128,21 +128,12 @@ function initial_guess(p)
     return a_init
 end
     
-function egm_find_policies(p)
+function egm_find_policies(a_init, assets_today, policy, c, rearrange_budget, p)
      # Unpack parameters
-     (;β, Π, na, nz, toler_pol, print_skip_pol, maxiter_pol, r_iter, agrid, w, zgrid) = p
+     (;β, Π, na, nz, toler_pol, print_skip_pol, maxiter_pol, R_iter, agrid, w, zgrid) = p
 
-     # Initialise matrices
-     a_init = initial_guess(p)
-     assets_today = zeros(na, nz)
-     g = zeros(na, nz)
-     c = zeros(na, nz)
-     rearrange_budget = zeros(na, nz)
-     for i in 1:na
-         for j in 1:nz
-            rearrange_budget[i,j] = agrid[i] - w * exp(zgrid[j])
-         end
-     end
+     # Initialise matrix
+     rearrange_budget = agrid .- w * exp.(zgrid')
 
      # Set initial error and iteration counter
      error_pol = toler_pol
@@ -154,20 +145,20 @@ function egm_find_policies(p)
     while (error_pol >= toler_pol) && (iter_pol <= maxiter_pol)
 
         # Calculate new consumption levels
-        cons = inverse_marginal_utility.((β * (1+r_iter)) .* (marginal_utility.(a_init) * Π'))
+        cons = inverse_marginal_utility.((β * R_iter) .* (marginal_utility.(a_init) * Π'))
 
         # Use the budget constraint to find today's assets
-        assets_today = (rearrange_budget .+ cons) ./ (1+r_iter)
+        assets_today = (rearrange_budget .+ cons) ./ (R_iter)
 
         for j in 1:nz
             spline = Spline1D(assets_today[:,j], agrid, k=1, bc="extrapolate")
-            g[:,j] = spline.(agrid)
+            policy[:,j] = spline.(agrid)
         end
 
-        g = max.(g, 0.0)
+        policy = max.(policy, 0.0)
 
         # Calculate error
-        error_pol = maximum((abs.(g - a_init)) ./ (1 .+ abs.(a_init)))
+        error_pol = maximum((abs.(policy - a_init)) ./ (1 .+ abs.(a_init)))
 
         # Keep track of iteration and error
         if iter_pol % print_skip_pol == 0
@@ -176,7 +167,7 @@ function egm_find_policies(p)
         end
 
         # Go to the next iteration
-        a_init = copy(g)
+        a_init = copy(policy)
         iter_pol += 1
 
     end
@@ -191,8 +182,80 @@ function egm_find_policies(p)
     end
 
     # Calculate consumption
-    c = (1+r_iter) .* agrid .+ (w .* exp.(zgrid)') .- g
+    c = (R_iter) .* agrid .+ (w .* exp.(zgrid)') .- policy
 
     # Return consumption and savings policy functions
-    return g, c
+    return policy, c
 end
+
+function find_equilibrium(p)
+    # Unpack parameters
+    (; A, α, δ, w, R_lb, R_ub, R_iter, n, na, nz, agrid, Π, zgrid, toler_prices, print_skip_prices, maxiter_prices) = p
+
+    # Initialise matrices for stationary distribution calculation
+    M = zeros(na, nz, na, nz)
+    O = zeros(n, n)
+    X = zeros(n+1, n)
+    Y = zeros(n+1)
+    Dist = zeros(n)
+    L = labour_supply(p)
+    wealth = zeros(na, nz)
+
+    # Initialise matrices for EGM step
+    a_init = initial_guess(p)
+    assets_today = zeros(na, nz)
+    policy = copy(assets_today)
+    G = zeros(n)
+    c = copy(assets_today)
+    rearrange_budget = copy(assets_today)
+    
+    # Initialise capital supply and demand
+    Ks, Kd = 1.0, 1.0
+
+    # Initialise iteration counter and error
+    iter_prices = 0
+    error_prices = toler_prices + 1.0
+    if iter_prices == 0
+        println("Starting price iteration")
+    end
+    while ((error_prices >= toler_prices) && (iter_prices <= maxiter_prices))
+        println("//////////////////////")
+        println("Price iteration: $iter_prices")
+        println("R_lb = $R_lb, R_ub = $R_ub")
+        R_iter = (p.R_lb + p.R_ub) / 2
+        Kd = ((A^α * L ^ (1-α)) / (R_iter + δ - 1)) ^ 1 / (1 - α)
+        w_iter = (1 - α) * A * (Kd / L) ^ α
+        p = (; p..., w = w_iter, R_iter = R_iter)
+        policy, c = egm_find_policies(a_init, assets_today, policy, c, rearrange_budget, p)
+        Dist = invariant_distribution(M, O, X, Y, Dist, policy, p)
+        G = reshape(policy, n, 1)
+        Ks = dot(Dist', G)
+        diff = Ks - Kd
+        error_prices = abs(diff)
+        if diff > 0
+            p = (; p..., R_ub = R_iter)
+        elseif diff < 0
+            p = (; p..., R_lb = R_iter)
+        end
+        if iter_prices % print_skip_prices == 0
+            println("%%%%%%%%%%%%%%%")
+            println("Price iteration: $iter_prices, r = $R_iter, w = $w_iter, Ks = $Ks, Kd = $Kd, diff = $diff")
+            println("%%%%%%%%%%%%%%%")
+        end
+        a_init = copy(policy)
+        iter_prices += 1
+    end
+    Invariant = reshape(Dist, na, nz)
+    for i in 1:na
+        for j in 1:nz
+            wealth[i, j] = p.w * exp(zgrid[j]) + p.R_iter * agrid[i]
+        end
+    end
+    println("r = $R_iter, w = $w_iter")
+    println("%%%%%%%%%%%%%%%")
+    return Dist, wealth, policy
+end
+
+model = create_EGM_model_aiyagari()
+
+dist, wealth, pol = find_equilibrium(model)
