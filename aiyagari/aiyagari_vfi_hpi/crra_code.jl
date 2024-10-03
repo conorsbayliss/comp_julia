@@ -241,7 +241,7 @@ function equilibrium_vfi_crra(p)
         w_iter = (1-α) * A * (Kd/L)^α
         Φ = w_iter * (exp(minimum(zgrid))/r_iter)
         if ϕ > 0
-            ϕ_iter = min(Φ, exp(minimum(zgrid)))
+            ϕ_iter = min(Φ, ϕ)
             p = (; p..., ϕ = ϕ_iter, r_iter = r_iter, w = w_iter)
         else
             p = (; p..., r_iter = r_iter, w = w_iter)
@@ -307,7 +307,7 @@ function equilibrium_hpi_crra(p)
         w_iter = (1-α) * A * (Kd/L)^α
         Φ = w_iter * (exp(minimum(zgrid))/r_iter)
         if ϕ > 0
-            ϕ_iter = min(Φ, exp(minimum(zgrid)))
+            ϕ_iter = min(Φ, ϕ)
             p = (; p..., ϕ = ϕ_iter, r_iter = r_iter, w = w_iter)
         else
             p = (; p..., r_iter = r_iter, w = w_iter)
@@ -338,8 +338,39 @@ function equilibrium_hpi_crra(p)
             wealth[i,j] = p.w * exp(zgrid[j]) + (1 + p.r_iter) * agrid[i]
         end
     end
-    println("%%%%%%%%%%%%%%%%%%%%")
     println("r = $(p.r_iter), w = $(p.w)")  
     println("%%%%%%%%%%%%%%%%%%%%")
     return v_init, policy, Invariant, wealth, capital_demand, capital_supply, interest_rates
+end
+
+function gini_coeff(distribution, wealth, p)
+    (; n, na, nz) = p
+    n = na * nz
+    gini_w = zeros(n)
+    gini_dist = zeros(n)
+    lorenz = zeros(n)
+    wealth = reshape(wealth, n)
+    distribution = reshape(distribution, n)
+    sorted_wealth = sort(wealth, rev = false)
+    sorted_indices = sortperm(wealth)
+    sorted_distribution = distribution[sorted_indices]
+    for i in 1:n
+        gini_w[i] = sorted_wealth[i] * sorted_distribution[i]
+        if i == 1
+            lorenz[i] = gini_w[i]
+            gini_dist[i] = sorted_distribution[i]
+        else
+            lorenz[i] = lorenz[i-1] + gini_w[i]
+            gini_dist[i] = gini_dist[i-1] + sorted_distribution[i]
+        end
+    end
+    lorenz = lorenz / lorenz[end]
+    gini_dist = gini_dist / gini_dist[end]
+    area_under_lorenz = 0.0
+    for i in 2:length(lorenz)
+        area_under_lorenz += 0.5 * (lorenz[i] + lorenz[i-1]) * (gini_dist[i] - gini_dist[i-1])
+    end
+    Gini_round = 1 - 2 * area_under_lorenz
+    Gini_round = round(Gini_round, digits = 4)
+    return lorenz, gini_dist, Gini_round
 end
